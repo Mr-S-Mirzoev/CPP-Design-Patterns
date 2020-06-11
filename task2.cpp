@@ -7,7 +7,6 @@
 #include <locale>
 #include <iterator>
 #include <cstdio>
-#include <windows.h>
 #include <set>
 #include <map>
 
@@ -357,7 +356,7 @@ class XML_reader {
     Company::Company comp;
 public:
     XML_reader (const std::string &filename) {
-        std::ifstream in("xml_data.xml");
+        std::ifstream in(filename);
         std::string line;
         std::string lastdpt, name, ttl;
         unsigned salary;
@@ -720,18 +719,11 @@ void print_commands () {
 
 int main()
 {
-    try {
-        SetConsoleCP(1251);
-	    SetConsoleOutputCP(65001);
-        //system ("chcp 65001");
-    } catch (...) {
-        std::cout << "Console input/output in Russian may be uninformative" << std::endl;
-    }
     std::string com;
     Invoker inv;
     print_commands();
     std::getline(std::cin, com);
-    while (com != EXIT) {
+    while (!com.empty() && com != EXIT) {
         try {
             if (!(SYSTEM(com))) {
                 if (com == ADD_WORKER) {
