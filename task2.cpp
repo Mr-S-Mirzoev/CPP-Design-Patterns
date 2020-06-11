@@ -880,14 +880,19 @@ int main ()
             std::getline(std::cin, com);
         } catch (std::out_of_range outr) {
             std::cout << "Went out of range in " << outr.what() << std::endl;
+            std::getline(std::cin, com);
         } catch (std::invalid_argument ia) {
             std::cout << "Got an invalid argument in " << ia.what() << std::endl;
+            std::getline(std::cin, com);
         } catch (std::logic_error lg) {
             std::cout << lg.what() << std::endl;
+            std::getline(std::cin, com);
         } catch (std::runtime_error rt) {
             std::cout << rt.what() << std::endl;
+            std::getline(std::cin, com);
         } catch (...) {
             std::cout << "Unknown error occured";
+            exit(1);
         }
     }
 }
