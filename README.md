@@ -9,4 +9,5 @@ Also, I fixed the issue with memory loss in Invoker. Pointers there are required
 
 ### Comments for Task 1 final commit
 1) Compile like:
-    g++ task1.cpp -o task1 -lpthread -std=c++11
+
+        g++ task1.cpp -o task1 -lpthread -std=c++11
