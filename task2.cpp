@@ -98,17 +98,31 @@ namespace string_manip {
 namespace Company {
     class WorkerInfo 
     {
-        std::string title;
-        unsigned salary;
+        mutable std::string title;
+        mutable unsigned salary;
     public:
+        //constructors
         WorkerInfo () {};
         WorkerInfo (const std::string &t, const unsigned &s): title(t), salary(s) {}
+        WorkerInfo (const WorkerInfo &rhs): title(rhs.title), salary(rhs.salary) {}
+
+        // setters
+        void set_title (const std::string &t) {
+            title = t;
+        }
+        void set_salary (const unsigned &s) {
+            salary = s;
+        }
+
+        // getter
+        std::pair <std::string, unsigned> GetData () const {
+            return std::pair<std::string, unsigned> (title, salary);
+        }
+        
+        // representations
         std::string repr () const {
             return "        ---->>Function: " + title + "\n" + 
                     "        ---->>Salary: " + std::to_string(salary) + "\n";
-        }
-        std::pair <std::string, unsigned> GetData () const {
-            return std::pair<std::string, unsigned> (title, salary);
         }
         std::vector <std::string> xml_repr () const {
             std::string indent4 = "            ";
@@ -119,96 +133,105 @@ namespace Company {
         }
     };
 
-    struct StrPtrComp 
-    {
-        bool operator() (const std::string *lhs, const std::string *rhs) const {
-            return ((*lhs) < (*rhs));
-        }
-    };
-
     class Department 
     {
         std::string name;
-        std::map<const std::__cxx11::basic_string<char>*, WorkerInfo *, StrPtrComp> workers;
-        unsigned sum, q;
+        mutable std::map<std::string, Company::WorkerInfo> workers;
+        mutable unsigned sum, q;
     public:
-        Department (const std::string &n): name(n), sum(0), q(0) {}
-        Department (const Department &rhs): name(rhs.name), workers(rhs.workers), sum(rhs.sum), q(rhs.q) {}
+        // constructors
         Department () {}
-        void newwrk (const std::string &wrk, 
-                    const std::string &title, 
-                    const unsigned &salary) {
-            std::string *x = new std::string (wrk);
-            auto search = workers.find(x);
+        Department (const std::string &n): name(n), sum(0U), q(0U) {}
+        Department (const Department &rhs): name(rhs.name), workers(rhs.workers), sum(rhs.sum), q(rhs.q) {}
+        
+        // modificators
+        void add_worker (const std::string &wrk, 
+                         const std::string &title, 
+                         const unsigned &salary) {
+            auto search = workers.find(wrk);
             if (search == workers.end()) {
                 sum += salary;
                 ++q;
-                workers[x] = new WorkerInfo(title, salary);
+                workers[wrk] = WorkerInfo(title, salary);
             } else {
-                throw std::logic_error("There is already a worker with such name "+wrk);
+                throw std::logic_error("There is already a worker with such name " + wrk);
             }
-        } 
-        void editwrk_elightability (const std::string &wrk, const std::string &newname) {
-            auto search = workers.find(&wrk);
+        }
+
+        void edit_worker_check (const std::string &wrk, const std::string &newname) {
+            auto search = workers.find(wrk);
             if (search != workers.end()) {
                 if (wrk != newname) {
-                    auto newsearch = workers.find(&newname);
+                    auto newsearch = workers.find(newname);
                     if (newsearch != workers.end()) {
-                        throw std::logic_error("There is no workers with such name "+wrk);
+                        throw std::logic_error("There is already another worker with name " + wrk);
                     }
                 }
             } else {
-                throw std::logic_error("There is no workers with such name "+wrk);
+                throw std::logic_error("There is no workers with such name " + wrk);
             }
-        } 
-        void editwrk (const std::string &wrk,
-                    const std::string &nwrk,
-                    const std::string &nttl,
-                    const unsigned &nsal) {
-            auto search = workers.find(&wrk);
+        }
+
+        void edit_worker (const std::string &wrk,
+                        const std::string &nwrk,
+                        const std::string &nttl,
+                        const unsigned &nsal) {
+            auto search = workers.find(wrk);
             if (wrk != nwrk) {
-                sum -= (*search).second->GetData().second;
+                sum -= (*search).second.GetData().second;
                 sum += nsal;
-                workers[&nwrk] = new WorkerInfo(nttl, nsal);
+                workers[nwrk] = WorkerInfo(nttl, nsal);
                 workers.erase(search);
             } else {
-                workers[&wrk] = new WorkerInfo(nttl, nsal);
+                workers[wrk] = WorkerInfo(nttl, nsal);
             }
         }
-        void newname (const std::string &x) {
-            name = x;
-        }
-        void delwrk (const std::string &wrk) {
-            auto search = workers.find(&wrk);
+
+        void delete_worker (const std::string &wrk) {
+            auto search = workers.find(wrk);
             if (search != workers.end()) {
-                sum -= (*search).second->GetData().second;
+                sum -= (*search).second.GetData().second;
                 --q;
                 workers.erase(search);
             } else {
                 throw std::logic_error("There is no worker with name "+wrk);
             }
         }
-        bool operator< (const Department & w) const {
-            return (name < w.name);
+
+        void change_name (const std::string &newname) {
+            name = newname;
         }
-        std::pair <std::string, unsigned> find_wrk (const std::string &wrk) const {
-            auto search = workers.find(&wrk);
+
+        // getters
+        std::pair <std::string, unsigned> find_worker (const std::string &wrk) const {
+            auto search = workers.find(wrk);
             if (search != workers.end()) {
-                return (*search).second->GetData();
+                return (*search).second.GetData();
             } else {
                 return std::make_pair(std::string(), unsigned());
             }
         }
+
+        std::string get_department_name () const {
+            return name;
+        }
+
+        bool empty () const {
+            return (name.empty() && workers.empty());
+        }
+
+        // representation
         std::string repr () const {
             std::string s;
             s += "    ====" + name + "\n";
             unsigned avg = (q == 0) ? 0 : sum/q;
             s += "    ====Average salary:" + std::to_string(avg) + "\n";
             for (auto &wrk : workers) {
-                s += "        ----Name: " + *(wrk.first) + "\n" + wrk.second->repr();
+                s += "        ----Name: " + wrk.first + "\n" + wrk.second.repr();
             }
             return s;
         }
+
         std::vector <std::string> xml_repr () const {
             std::string indent = "   ";
             std::string indent2 = "      ";
@@ -219,11 +242,11 @@ namespace Company {
             lines.push_back(indent2 + "<employments>");
             for (auto &wrk : workers) {
                 lines.push_back(indent3 + "<employment>");
-                auto x = string_manip::split(*wrk.first, " ");
+                auto x = string_manip::split(wrk.first, " ");
                 lines.push_back(indent4 + NAMEDVAL("surname", x[0]));
                 lines.push_back(indent4 + NAMEDVAL("name", x[1]));
                 lines.push_back(indent4 + NAMEDVAL("middleName", x[2]));
-                for (auto &lns : (wrk.second)->xml_repr()) {
+                for (auto &lns : (wrk.second).xml_repr()) {
                     lines.push_back(lns);
                 }
                 lines.push_back(indent3 + "</employment>");
@@ -234,120 +257,140 @@ namespace Company {
         }
     };
 
-    struct DeptPtrComp 
-    {
-        bool operator() (const Department *lhs, const Department *rhs) const {
-            return ((*lhs) < (*rhs));
-        }
-    };
-
     class Company 
     {
-        std::set<Department *, DeptPtrComp> dpts;
+        mutable std::map<std::string, Department> dpts;
     public:
+        // change the Company containts with te containts of other.
         void set_comp (const Company &c) {
             dpts = c.dpts;
         }
-        void show () const {
-            std::string s;
-            s = ">>>>Company:\n";
-            for (auto &dpt : dpts) {
-                s += dpt->repr();
-            }
-            std::cout << s;
+
+        // operator=
+        Company& operator= (const Company &other) {
+            dpts = other.dpts;
+            return (*this);
         }
-        void newdp (const std::string &dp, Department *ptr) {
-            auto search = dpts.find(ptr);
+
+        // modificators
+        void init_department (const std::string &name, const Department &d) {
+            dpts[name] = d;
+        }
+        void add_department (const std::string &name) {
+            auto search = dpts.find(name);
             if (search == dpts.end()) {
-                dpts.insert(ptr);
+                Department dpt(name);
+                dpts[name] = dpt;
             } else {
-                throw std::logic_error("There is a dept with the same name "+dp);
+                throw std::logic_error("There is a dept with the same name " + name);
             }
         }
-        void deldp (const std::string &dp) {
-            auto search = dpts.find(new Department(dp));
+        void delete_department (const std::string &name) {
+            auto search = dpts.find(name);
             if (search != dpts.end()) {
                 dpts.erase(search);
             } else {
-                throw std::logic_error("There was no dept with name "+dp);
+                throw std::logic_error("There was no dept with name " + name);
             }
         }
-        void editwrk_elightability (
+        void add_worker (const std::string &dpt, 
+                        const std::string &wrk, 
+                        const std::string &title, 
+                        const unsigned &salary) {
+            auto search = dpts.find(dpt);
+            if (search != dpts.end()) {
+                (*search).second.add_worker(wrk, title, salary);
+            } else {
+                throw std::logic_error("There was no dept with name " + dpt);
+            }
+        }
+        void delete_worker (const std::string &dpt, const std::string &wrk) {
+            auto search = dpts.find(dpt);
+            if (search != dpts.end()) {
+                (*search).second.delete_worker(wrk);
+            } else {
+                throw std::logic_error("There was no dept with name " + dpt);
+            }
+        }
+        void edit_worker_check (
                     const std::string &dpt,
                     const std::string &wrk,
                     const std::string &newname) {
-            auto search = dpts.find(new Department(dpt));
+            auto search = dpts.find(dpt);
             if (search != dpts.end()) {
-                (*search)->editwrk_elightability(wrk, newname);
+                (*search).second.edit_worker_check(wrk, newname);
             } else {
-                throw std::logic_error("There was no dept with name "+dpt);
+                throw std::logic_error("There was no dept with name " + dpt);
             }
         }
-        void editwrk (const std::string &dpt,
-                    const std::string &wrk,
-                    const std::string &nwrk,
-                    const std::string &nttl,
-                    const unsigned &nsal) {
-            auto search = dpts.find(new Department(dpt));
+        void edit_worker (const std::string &dpt,
+                        const std::string &wrk,
+                        const std::string &nwrk,
+                        const std::string &nttl,
+                        const unsigned &nsal) {
+            auto search = dpts.find(dpt);
             if (search != dpts.end()) {
-                (*search)->editwrk(wrk, nwrk, nttl, nsal);
+                (*search).second.edit_worker(wrk, nwrk, nttl, nsal);
             } else {
-                throw std::logic_error("There was no dept with name "+dpt);
+                throw std::logic_error("There was no dept with name " + dpt);
             }
         }
-        void newwrk (const std::string &dpt, 
-                    const std::string &wrk, 
-                    const std::string &title, 
-                    const unsigned &salary) {
-            auto search = dpts.find(new Department(dpt));
+        void change_department_name(const std::string &ex, const std::string &n) {
+            auto search = dpts.find(ex);
             if (search != dpts.end()) {
-                (*search)->newwrk(wrk, title, salary);
-            } else {
-                throw std::logic_error("There was no dept with name "+dpt);
-            }
-        }
-        void delwrk (const std::string &dpt, const std::string &wrk) {
-            auto search = dpts.find(new Department(dpt));
-            if (search != dpts.end()) {
-                (*search)->delwrk(wrk);
-            } else {
-                throw std::logic_error("There was no dept with name "+dpt);
-            }
-        }
-        std::pair <std::string, unsigned> find_wrk (const std::string &dpt, const std::string &wrk) {
-            auto search = dpts.find(new Department(dpt));
-            if (search != dpts.end()) {
-                return (*search)->find_wrk(wrk);
-            } else {
-                return std::make_pair(std::string(), unsigned());
-            }
-        }
-        Department* find_dpt (const std::string &name) {
-            auto search = dpts.find(new Department(name));
-            if (search != dpts.end()) {
-                return (*search);
-            } else {
-                return nullptr;
-            }
-        }
-        void chg_dpt(const std::string &ex, const std::string &n) {
-            Department *x = find_dpt(ex);
-            if (x != nullptr) {
-                x->newname(n);
+                auto newsearch = dpts.find(n);
+                if (newsearch == dpts.end()) {
+                    Department neo((*search).second);
+                    neo.change_name(n);
+                    dpts[n] = neo;
+                    dpts.erase(search);
+                } else {
+                    throw std::logic_error("No department called " + n + " found.");
+                }
             } else {
                 throw std::logic_error("No department called " + ex + " found.");
             }
         }
+
+        // getters
+        std::pair <std::string, unsigned> find_wrk (const std::string &dpt, const std::string &wrk) {
+            auto search = dpts.find(dpt);
+            if (search != dpts.end()) {
+                return (*search).second.find_worker(wrk);
+            } else {
+                return std::make_pair(std::string(), unsigned());
+            }
+        }
+        Department find_dpt (const std::string &name) {
+            auto search = dpts.find(name);
+            if (search != dpts.end()) {
+                return (*search).second;
+            } else {
+                return Department();
+            }
+        }
+
+        // representation
         std::vector <std::string> xml_repr () const {
             std::vector <std::string> lines;
             lines.push_back("<departments>");
             for (auto &dp : dpts) {
-                for (auto &lns : dp->xml_repr()) {
+                for (auto &lns : dp.second.xml_repr()) {
                     lines.push_back(lns);
                 }
             }
             lines.push_back("</departments>");
             return lines;
+        }
+
+        // printer
+        void show () const {
+            std::string s;
+            s = ">>>>Company:\n";
+            for (auto &dpt : dpts) {
+                s += dpt.second.repr();
+            }
+            std::cout << s;
         }
     };
 }
@@ -361,18 +404,18 @@ public:
         std::string lastdpt, name, ttl;
         unsigned salary;
 
-        // Читаем файл построчно
-        while(std::getline(in, line)) {
+        // Reading file line by line
+        while (std::getline(in, line)) {
             if (line[2] == '?') {
                 continue;
             }
-            if (line == "<departments>") {
+            if (string_manip::trim_copy(line) == "<departments>") {
                 continue;
             }
             std::string s_trimmed((string_manip::trim_copy(line)));
             if (s_trimmed.substr(1, 10) == "department") {
                 lastdpt = s_trimmed.substr(18, s_trimmed.length() - 20);
-                comp.newdp(lastdpt, new Company::Department(lastdpt));
+                comp.add_department(lastdpt);
             } else if (s_trimmed == "<employments>") {
                 continue;
             } else if (s_trimmed == "<employment>") {
@@ -400,7 +443,7 @@ public:
                 size_t end = s_trimmed.find('<', 1);
                 salary = std::stoul(s_trimmed.substr(begin, end - begin));
             } else if (s_trimmed == "</employment>") {
-                comp.newwrk(lastdpt, name, ttl, salary);
+                comp.add_worker(lastdpt, name, ttl, salary);
             } else {
                 continue;
             }
@@ -441,8 +484,8 @@ namespace Commands {
         virtual void Execute() = 0;
         virtual void unExecute() = 0;
 
-        void setCompany (Company::Company *c) {
-            comp = c;
+        void setCompany (Company::Company *ptr) {
+            comp = ptr;
         }
     };
 
@@ -452,10 +495,10 @@ namespace Commands {
     public:
         AddDeptCommand (const std::string &n): name(n) {}
         void Execute() {
-            comp->newdp(name, new Company::Department(name));
+            comp->add_department(name);
         }
         void unExecute() {
-            comp->deldp(name);
+            comp->delete_department(name);
         }
     };
 
@@ -469,10 +512,10 @@ namespace Commands {
                         const std::string &t,
                         const unsigned &s): dpt(d), wrk(w), ttl(t), sal(s) {}
         void Execute() {
-            comp->newwrk(dpt, wrk, ttl, sal);
+            comp->add_worker(dpt, wrk, ttl, sal);
         }
         void unExecute() {
-            comp->delwrk(dpt, wrk);
+            comp->delete_worker(dpt, wrk);
         }
     };
 
@@ -483,16 +526,16 @@ namespace Commands {
     public:
         DeleteDeptCommand (const std::string &n): name(n) {}
         void Execute() {
-            Company::Department *x = (comp->find_dpt(name));
-            if (x != nullptr) {
-                cpy = *x;
+            auto x = comp->find_dpt(name);
+            if (!x.empty()) {
+                cpy = x;
             } else {
                 throw std::logic_error("No department called " + name + " found.");
             }
-            comp->deldp(name);
+            comp->delete_department(name);
         }
         void unExecute() {
-            comp->newdp(name, &cpy);
+            comp->init_department(name, cpy);
         }
     };
 
@@ -510,10 +553,10 @@ namespace Commands {
             } else {
                 throw std::logic_error("Haven't find department or worker with such name.");
             }
-            comp->delwrk(dpt, wrk);
+            comp->delete_worker(dpt, wrk);
         }
         void unExecute() {
-            comp->newwrk(dpt, wrk, info.first, info.second);
+            comp->add_worker(dpt, wrk, info.first, info.second);
         }
     };
 
@@ -524,10 +567,10 @@ namespace Commands {
         ChangeNameDeptCommand (const std::string &d, 
                             const std::string &n): dpt(d), newname(n) {}
         void Execute() {
-            comp->chg_dpt(dpt, newname);
+            comp->change_department_name(dpt, newname);
         }
         void unExecute() {
-            comp->chg_dpt(newname, dpt);
+            comp->change_department_name(newname, dpt);
         }
     };
 
@@ -542,17 +585,17 @@ namespace Commands {
                         const std::string &f,
                         const unsigned &s): dpt(d), wrk(w), newname(n), newinfo(f,s) {}
         void Execute() {
-            comp->editwrk_elightability(dpt, wrk, newname);
+            comp->edit_worker_check(dpt, wrk, newname);
             auto pr = comp->find_wrk(dpt, wrk);
             if (!pr.first.empty() && pr.second) {
                 info = pr;
             } else {
                 throw std::logic_error("Haven't find department or worker with such name.");
             }
-            comp->editwrk(dpt, wrk, newname, newinfo.first, newinfo.second);
+            comp->edit_worker(dpt, wrk, newname, newinfo.first, newinfo.second);
         }
         void unExecute() {
-            comp->editwrk(dpt, newname, wrk, info.first, info.second);
+            comp->edit_worker(dpt, newname, wrk, info.first, info.second);
         }
     };
 
@@ -699,6 +742,14 @@ public:
     void Show() {
         com.show();
     }
+    ~Invoker () {
+        for (auto x : DoneCommands) {
+            delete x;
+        }
+        for (auto x : CanceledCommands) {
+            delete x;
+        }
+    }
 };
 
 void print_commands () {
@@ -717,8 +768,29 @@ void print_commands () {
     std::cout << "b) save - saves company to file" << std::endl;
 }
 
-int main()
+int main ()
 {
+    /*
+    std::map<const std::string, Company::WorkerInfo> workers;
+    {
+        workers["kisa"] = Company::WorkerInfo ("british", 1000U);
+    }
+    workers["kisa"].set_title("persian");
+    auto x = workers["kisa"].GetData();
+    std::cout << x.first << " " << x.second << std::endl;
+    */
+    /*
+    Company::Department d("Koty");
+    d.add_worker("Kotik", "Glavni", 5000U);
+    d.add_worker("Kisa", "Glavnaya", 500U);
+    d.delete_worker("Kotik");
+    d.edit_worker("Kisa", "Koshak", "Zam", 30U);
+    std::cout << d.repr();
+    */
+    /*
+    XML_reader rd("data.xml");
+    rd.show();
+    */
     std::string com;
     Invoker inv;
     print_commands();
