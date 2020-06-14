@@ -770,33 +770,12 @@ void print_commands () {
 
 int main ()
 {
-    /*
-    std::map<const std::string, Company::WorkerInfo> workers;
-    {
-        workers["kisa"] = Company::WorkerInfo ("british", 1000U);
-    }
-    workers["kisa"].set_title("persian");
-    auto x = workers["kisa"].GetData();
-    std::cout << x.first << " " << x.second << std::endl;
-    */
-    /*
-    Company::Department d("Koty");
-    d.add_worker("Kotik", "Glavni", 5000U);
-    d.add_worker("Kisa", "Glavnaya", 500U);
-    d.delete_worker("Kotik");
-    d.edit_worker("Kisa", "Koshak", "Zam", 30U);
-    std::cout << d.repr();
-    */
-    /*
-    XML_reader rd("data.xml");
-    rd.show();
-    */
-    std::string com;
+    std::string com = "START";
     Invoker inv;
     print_commands();
-    std::getline(std::cin, com);
     while (!com.empty() && com != EXIT) {
         try {
+            std::getline(std::cin, com);
             if (!(SYSTEM(com))) {
                 if (com == ADD_WORKER) {
                     std::string dpt, wrk, ttl;
@@ -863,6 +842,8 @@ int main ()
                     std::cout << "File name: ";
                     std::getline(std::cin, fname);
                     inv.savetofile(fname);
+                } else if (com == EXIT) {
+                    std::cout << "Thanks for using the programm!" << std::endl;
                 } else {
                     std::cerr << "Unknown command" << std::endl;
                 }
@@ -877,22 +858,18 @@ int main ()
                     inv.Show();
                 }
             }
-            std::getline(std::cin, com);
         } catch (std::out_of_range outr) {
             std::cout << "Went out of range in " << outr.what() << std::endl;
-            std::getline(std::cin, com);
         } catch (std::invalid_argument ia) {
             std::cout << "Got an invalid argument in " << ia.what() << std::endl;
-            std::getline(std::cin, com);
         } catch (std::logic_error lg) {
             std::cout << lg.what() << std::endl;
-            std::getline(std::cin, com);
         } catch (std::runtime_error rt) {
             std::cout << rt.what() << std::endl;
-            std::getline(std::cin, com);
         } catch (...) {
             std::cout << "Unknown error occured";
             exit(1);
         }
     }
+    return 0;
 }
